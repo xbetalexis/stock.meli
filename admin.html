@@ -4,14 +4,48 @@
 <meta charset="UTF-8">
 <title>Stock</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-body{font-family:sans-serif;background:#020617;color:white;padding:10px}
-input,select,button{padding:8px;margin:5px}
-.card{background:#0f172a;padding:10px;border-radius:8px;margin-top:10px}
-.low{color:red}
-.top{display:flex;flex-wrap:wrap;gap:5px}
+body{
+  font-family:sans-serif;
+  background:#020617;
+  color:white;
+  padding:10px
+}
+input,select,button{
+  padding:8px;
+  margin:5px
+}
+.card{
+  background:#0f172a;
+  padding:10px;
+  border-radius:8px;
+  margin-top:10px
+}
+.low{
+  color:#fff;
+  background:red;
+  padding:4px 8px;
+  border-radius:6px;
+  font-weight:bold;
+  animation:blink 1s infinite
+}
+.critico{
+  border:3px solid red;
+  box-shadow:0 0 15px red
+}
+@keyframes blink{
+  0%,50%,100%{opacity:1}
+  25%,75%{opacity:0.3}
+}
+.top{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px
+}
 </style>
 </head>
+
 <body>
 
 <h2>📦 Stock</h2>
@@ -33,74 +67,92 @@ input,select,button{padding:8px;margin:5px}
 <div id="lista"></div>
 
 <script>
-if(localStorage.getItem('auth')!=='ok')location.href='index.html'
+if(localStorage.getItem('auth')!=='ok'){
+  location.href='index.html'
+}
 
-let stock = JSON.parse(localStorage.getItem('stock')||'[]')
+let stock = JSON.parse(localStorage.getItem('stock') || '[]')
 
 function guardar(){
-  localStorage.setItem('stock',JSON.stringify(stock))
+  localStorage.setItem('stock', JSON.stringify(stock))
 }
 
 function cargarCategorias(){
-  const cats=[...new Set(stock.map(p=>p.categoria))]
-  filtro.innerHTML='<option value="">Todas</option>'
-  cats.forEach(c=>{
-    filtro.innerHTML+=`<option>${c}</option>`
+  const cats = [...new Set(stock.map(p => p.categoria))]
+  filtro.innerHTML = '<option value="">Todas</option>'
+  cats.forEach(c => {
+    filtro.innerHTML += `<option>${c}</option>`
   })
 }
 
 function cargar(){
-  lista.innerHTML=''
-  const q=buscar.value.toLowerCase()
-  const f=filtro.value
+  lista.innerHTML = ''
+  const q = buscar.value.toLowerCase()
+  const f = filtro.value
+
   stock
-  .filter(p=>
-    (!f||p.categoria===f) &&
-    p.nombre.toLowerCase().includes(q)
-  )
-  .forEach(p=>{
-    lista.innerHTML+=`
-    <div class="card">
-      <b>${p.nombre}</b> <small>(${p.categoria})</small><br>
-      Stock: <span class="${p.cantidad<=3?'low':''}">${p.cantidad}</span><br>
-      <button onclick="mod('${p.id}',1)">+</button>
-      <button onclick="mod('${p.id}',-1)">-</button>
-      <button onclick="borrar('${p.id}')">🗑</button>
-    </div>`
-  })
+    .filter(p =>
+      (!f || p.categoria === f) &&
+      p.nombre.toLowerCase().includes(q)
+    )
+    .forEach(p => {
+      lista.innerHTML += `
+      <div class="card ${p.cantidad<=3?'critico':''}">
+        <b>${p.nombre}</b>
+        <small>(${p.categoria})</small><br>
+
+        Stock:
+        <span class="${p.cantidad<=3?'low':''}">
+          ${p.cantidad<=3
+            ? '⚠ STOCK CRÍTICO: ' + p.cantidad
+            : p.cantidad}
+        </span><br>
+
+        <button onclick="mod('${p.id}',1)">+</button>
+        <button onclick="mod('${p.id}',-1)">-</button>
+        <button onclick="borrar('${p.id}')">🗑</button>
+      </div>`
+    })
 }
 
 function agregar(){
-  if(!nombre.value||!categoria.value)return
+  if(!nombre.value || !categoria.value) return
+
   stock.push({
-    id:Date.now().toString(),
-    nombre:nombre.value,
-    categoria:categoria.value,
-    cantidad:+cantidad.value
+    id: Date.now().toString(),
+    nombre: nombre.value,
+    categoria: categoria.value,
+    cantidad: +cantidad.value
   })
+
   guardar()
   cargarCategorias()
   cargar()
-  nombre.value=''
-  categoria.value=''
-  cantidad.value=''
+
+  nombre.value = ''
+  categoria.value = ''
+  cantidad.value = ''
 }
 
-function mod(id,val){
-  const p=stock.find(x=>x.id===id)
+function mod(id, val){
+  const p = stock.find(x => x.id === id)
   if(p){
-    p.cantidad=Math.max(0,p.cantidad+val)
-    guardar();cargar()
+    p.cantidad = Math.max(0, p.cantidad + val)
+    guardar()
+    cargar()
   }
 }
 
 function borrar(id){
-  stock=stock.filter(p=>p.id!==id)
-  guardar();cargarCategorias();cargar()
+  stock = stock.filter(p => p.id !== id)
+  guardar()
+  cargarCategorias()
+  cargar()
 }
 
 cargarCategorias()
 cargar()
 </script>
+
 </body>
 </html>
