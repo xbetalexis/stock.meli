@@ -57,10 +57,10 @@ th{color:var(--muted);text-align:left}
 
 <header>
   <div class="header-grid">
-    <div class="kpi"><h3>Productos</h3><span id="kProd">0</span></div>
-    <div class="kpi"><h3>Stock crítico</h3><span id="kCritico">Sin alertas</span></div>
-    <div class="kpi"><h3>Vendido hoy</h3><span id="kHoy">0</span></div>
-    <div class="kpi"><h3>Ganancia hoy</h3><span id="kGan">$0</span></div>
+    <div class="kpi"><h3>📦 Productos</h3><span id="kProd">0</span></div>
+    <div class="kpi"><h3>🚨 Stock crítico</h3><span id="kCritico">Sin alertas</span></div>
+    <div class="kpi"><h3>💰 Vendido hoy</h3><span id="kHoy">0</span></div>
+    <div class="kpi"><h3>📈 Ganancia hoy</h3><span id="kGan">$0</span></div>
   </div>
 </header>
 
@@ -74,7 +74,7 @@ th{color:var(--muted);text-align:left}
 <input id="categoria" placeholder="Categoría">
 <input id="cantidad" type="number" placeholder="Stock inicial">
 <input id="precio" type="number" placeholder="Precio unitario">
-<button onclick="agregar()">Agregar</button>
+<button onclick="agregar()">➕ Agregar</button>
 
 <div class="grid" id="lista"></div>
 
@@ -88,11 +88,11 @@ th{color:var(--muted);text-align:left}
 <table>
 <thead>
 <tr>
-<th>Fecha</th>
-<th>Producto</th>
-<th>Cant.</th>
-<th>Precio</th>
-<th>Ganancia</th>
+<th>📅 Fecha</th>
+<th>📦 Producto</th>
+<th>🔢 Cant.</th>
+<th>💵 Precio</th>
+<th>📈 Ganancia</th>
 </tr>
 </thead>
 <tbody id="ventasTabla"></tbody>
@@ -151,12 +151,12 @@ function render(){
     <div class="card ${p.cantidad<=3?'critico':''}">
       <b>${p.nombre}</b>
       <small>${p.categoria}</small>
-      <div>Precio: $${p.precio}</div>
+      <div>💵 Precio: $${p.precio}</div>
       <div class="stock ${p.cantidad<=3?'low':''}">${p.cantidad}</div>
       <div class="actions">
         <button onclick="vender('${p.id}')">💰 Vender</button>
         <button onclick="reponer('${p.id}')">📦 Reponer</button>
-        <button onclick="eliminar('${p.id}')">🗑</button>
+        <button onclick="eliminar('${p.id}')">🗑 Eliminar</button>
       </div>
     </div>`
   })
@@ -182,12 +182,9 @@ function agregar(){
 function vender(id){
   const p = stock.find(x=>x.id===id)
   if(!p) return
-
   const cant = parseInt(prompt(`¿Cuántas unidades?\nStock: ${p.cantidad}`))
   if(isNaN(cant)||cant<=0||cant>p.cantidad) return
-
   p.cantidad -= cant
-
   ventas.push({
     fecha:new Date().toISOString(),
     producto:p.nombre,
@@ -195,7 +192,6 @@ function vender(id){
     precio:p.precio,
     ganancia:cant*p.precio
   })
-
   save()
   render()
   renderVentas()
@@ -246,6 +242,12 @@ function renderVentas(){
 
 render()
 renderVentas()
+</script>
+
+<!-- 🔥 TWEMOJI (emojis 3D / pro) -->
+<script src="https://twemoji.maxcdn.com/v/latest/twemoji.min.js" crossorigin="anonymous"></script>
+<script>
+  twemoji.parse(document.body, {folder: 'svg', ext: '.svg'})
 </script>
 
 </body>
