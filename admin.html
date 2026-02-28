@@ -63,13 +63,13 @@ header{
   padding:15px;
 }
 
-input,select,button{
+input,button{
   padding:10px;
   border-radius:8px;
   border:none;
 }
 
-input,select{
+input{
   background:#020617;
   color:var(--text);
   border:1px solid #1f2937;
@@ -91,6 +91,19 @@ button{
   background:var(--card);
   padding:12px;
   border-radius:12px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.card.critico{
+  border:2px solid var(--danger);
+  box-shadow:0 0 12px var(--danger);
+}
+
+.stock{
+  font-size:20px;
+  font-weight:bold;
 }
 
 .stock.low{
@@ -100,30 +113,22 @@ button{
   animation:blink 1s infinite;
 }
 
+.actions{
+  display:flex;
+  gap:6px;
+  margin-top:auto;
+}
+
+.actions button{
+  flex:1;
+  background:#020617;
+  border:1px solid #1f2937;
+  color:var(--text);
+}
+
 @keyframes blink{
   0%,50%,100%{opacity:1}
   25%,75%{opacity:.3}
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:10px;
-}
-
-th,td{
-  padding:8px;
-  border-bottom:1px solid #1f2937;
-  font-size:14px;
-}
-
-th{
-  color:var(--muted);
-  text-align:left;
-}
-
-@media(max-width:700px){
-  .header-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -165,7 +170,7 @@ th{
 <input type="date" id="fechaFiltro" onchange="renderVentas()">
 <input id="buscarVenta" placeholder="Buscar producto..." oninput="renderVentas()">
 
-<table>
+<table width="100%">
 <thead>
 <tr>
 <th>Fecha</th>
@@ -199,14 +204,21 @@ function render(){
 
   stock.forEach(p=>{
     if(p.cantidad<=3) crit++
+
     lista.innerHTML+=`
-    <div class="card">
-      <b>${p.nombre}</b><br>
-      <small>${p.categoria}</small><br>
+    <div class="card ${p.cantidad<=3?'critico':''}">
+      <b>${p.nombre}</b>
+      <small>${p.categoria}</small>
+
       <div class="stock ${p.cantidad<=3?'low':''}">
         ${p.cantidad}
       </div>
-      <button onclick="vender('${p.id}')">💰 Vender</button>
+
+      <div class="actions">
+        <button onclick="vender('${p.id}')">💰 Vender</button>
+        <button onclick="reponer('${p.id}')">📦 Reponer</button>
+        <button onclick="eliminar('${p.id}')">🗑</button>
+      </div>
     </div>`
   })
 
@@ -231,7 +243,7 @@ function vender(id){
   const p = stock.find(x=>x.id===id)
   if(!p) return
 
-  const cant = parseInt(prompt(`¿Cuántas unidades?\nStock: ${p.cantidad}`))
+  const cant = parseInt(prompt(`¿Cuántas unidades vendiste?\nStock: ${p.cantidad}`))
   if(isNaN(cant)||cant<=0||cant>p.cantidad) return
 
   p.cantidad -= cant
@@ -247,14 +259,34 @@ function vender(id){
   renderVentas()
 }
 
+function reponer(id){
+  const p = stock.find(x=>x.id===id)
+  if(!p) return
+
+  const cant = parseInt(prompt('¿Cuántas unidades ingresan al stock?'))
+  if(isNaN(cant)||cant<=0) return
+
+  p.cantidad += cant
+  save()
+  render()
+}
+
+function eliminar(id){
+  if(confirm('¿Eliminar producto definitivamente?')){
+    stock = stock.filter(p=>p.id!==id)
+    save()
+    render()
+  }
+}
+
 function renderVentas(){
   ventasTabla.innerHTML=''
   let totalHoy=0
 
   ventas
     .filter(v=>{
-      const f = v.fecha.split('T')[0]
-      return (!fechaFiltro.value || f===fechaFiltro.value) &&
+      const f=v.fecha.split('T')[0]
+      return (!fechaFiltro.value||f===fechaFiltro.value) &&
              v.producto.toLowerCase().includes(buscarVenta.value.toLowerCase())
     })
     .forEach(v=>{
