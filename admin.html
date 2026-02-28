@@ -2,156 +2,284 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Stock</title>
+<title>Panel de Stock</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+:root{
+  --bg:#020617;
+  --panel:#0f172a;
+  --card:#111827;
+  --accent:#38bdf8;
+  --danger:#dc2626;
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+}
+
+*{box-sizing:border-box}
+
 body{
-  font-family:sans-serif;
-  background:#020617;
-  color:white;
-  padding:10px
+  margin:0;
+  font-family:system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background:var(--bg);
+  color:var(--text);
 }
+
+header{
+  position:sticky;
+  top:0;
+  background:var(--panel);
+  padding:12px;
+  border-bottom:1px solid #1f2937;
+  z-index:10;
+}
+
+.header-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+}
+
+.kpi{
+  background:var(--card);
+  padding:10px;
+  border-radius:10px;
+  text-align:center;
+}
+
+.kpi h3{
+  margin:0;
+  font-size:13px;
+  color:var(--muted);
+}
+
+.kpi span{
+  font-size:22px;
+  font-weight:bold;
+}
+
+.container{
+  max-width:1100px;
+  margin:auto;
+  padding:15px;
+}
+
+.controls{
+  display:grid;
+  grid-template-columns:1fr 200px;
+  gap:10px;
+  margin-bottom:15px;
+}
+
 input,select,button{
-  padding:8px;
-  margin:5px
-}
-.card{
-  background:#0f172a;
   padding:10px;
   border-radius:8px;
-  margin-top:10px
+  border:none;
+  font-size:14px;
 }
-.low{
-  color:#fff;
-  background:red;
+
+input,select{
+  background:#020617;
+  color:var(--text);
+  border:1px solid #1f2937;
+}
+
+button{
+  background:var(--accent);
+  font-weight:600;
+  cursor:pointer;
+}
+
+.form{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr auto;
+  gap:10px;
+  margin-bottom:20px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:12px;
+}
+
+.card{
+  background:var(--card);
+  padding:12px;
+  border-radius:12px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.card.critico{
+  border:2px solid var(--danger);
+  box-shadow:0 0 12px var(--danger);
+}
+
+.badge{
+  display:inline-block;
+  background:#1f2937;
+  color:var(--muted);
+  font-size:12px;
+  padding:3px 8px;
+  border-radius:999px;
+}
+
+.stock{
+  font-size:20px;
+  font-weight:bold;
+}
+
+.stock.low{
+  color:white;
+  background:var(--danger);
   padding:4px 8px;
   border-radius:6px;
-  font-weight:bold;
-  animation:blink 1s infinite
+  animation:blink 1s infinite;
 }
-.critico{
-  border:3px solid red;
-  box-shadow:0 0 15px red
+
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:auto;
 }
+
+.actions button{
+  flex:1;
+  background:#020617;
+  border:1px solid #1f2937;
+  color:var(--text);
+}
+
+.actions button:hover{
+  background:#111827;
+}
+
 @keyframes blink{
   0%,50%,100%{opacity:1}
-  25%,75%{opacity:0.3}
+  25%,75%{opacity:.3}
 }
-.top{
-  display:flex;
-  flex-wrap:wrap;
-  gap:5px
+
+@media(max-width:700px){
+  .header-grid{grid-template-columns:1fr}
+  .controls{grid-template-columns:1fr}
+  .form{grid-template-columns:1fr}
 }
 </style>
 </head>
 
 <body>
 
-<h2>📦 Stock</h2>
+<header>
+  <div class="header-grid">
+    <div class="kpi">
+      <h3>Total productos</h3>
+      <span id="kTotal">0</span>
+    </div>
+    <div class="kpi">
+      <h3>Stock crítico</h3>
+      <span id="kCritico">0</span>
+    </div>
+    <div class="kpi">
+      <h3>Categoría</h3>
+      <span id="kCategoria">Todas</span>
+    </div>
+  </div>
+</header>
 
-<div class="top">
-  <input id="buscar" placeholder="🔍 Buscar..." oninput="cargar()">
-  <select id="filtro" onchange="cargar()">
+<div class="container">
+
+<div class="controls">
+  <input id="buscar" placeholder="Buscar producto..." oninput="render()">
+  <select id="filtro" onchange="render()">
     <option value="">Todas</option>
   </select>
 </div>
 
-<div class="top">
+<div class="form">
   <input id="nombre" placeholder="Producto">
-  <input id="categoria" placeholder="Categoría (celulares, fundas…)">
-  <input id="cantidad" type="number" placeholder="Cantidad">
+  <input id="categoria" placeholder="Categoría">
+  <input id="cantidad" type="number" placeholder="Stock">
   <button onclick="agregar()">Agregar</button>
 </div>
 
-<div id="lista"></div>
+<div class="grid" id="lista"></div>
+
+</div>
 
 <script>
-if(localStorage.getItem('auth')!=='ok'){
-  location.href='index.html'
-}
+if(localStorage.getItem('auth')!=='ok')location.href='index.html'
 
-let stock = JSON.parse(localStorage.getItem('stock') || '[]')
+let stock=JSON.parse(localStorage.getItem('stock')||'[]')
 
-function guardar(){
-  localStorage.setItem('stock', JSON.stringify(stock))
-}
+function save(){localStorage.setItem('stock',JSON.stringify(stock))}
 
-function cargarCategorias(){
-  const cats = [...new Set(stock.map(p => p.categoria))]
-  filtro.innerHTML = '<option value="">Todas</option>'
-  cats.forEach(c => {
-    filtro.innerHTML += `<option>${c}</option>`
+function render(){
+  lista.innerHTML=''
+  const q=buscar.value.toLowerCase()
+  const f=filtro.value
+
+  const cats=[...new Set(stock.map(p=>p.categoria))]
+  filtro.innerHTML='<option value="">Todas</option>'
+  cats.forEach(c=>filtro.innerHTML+=`<option>${c}</option>`)
+
+  let criticos=0
+
+  stock.filter(p=>
+    (!f||p.categoria===f) &&
+    p.nombre.toLowerCase().includes(q)
+  ).forEach(p=>{
+    if(p.cantidad<=3)criticos++
+    lista.innerHTML+=`
+    <div class="card ${p.cantidad<=3?'critico':''}">
+      <strong>${p.nombre}</strong>
+      <span class="badge">${p.categoria}</span>
+      <div class="stock ${p.cantidad<=3?'low':''}">
+        ${p.cantidad<=3?'⚠ '+p.cantidad:p.cantidad}
+      </div>
+      <div class="actions">
+        <button onclick="mod('${p.id}',1)">➕</button>
+        <button onclick="mod('${p.id}',-1)">➖</button>
+        <button onclick="del('${p.id}')">🗑</button>
+      </div>
+    </div>`
   })
-}
 
-function cargar(){
-  lista.innerHTML = ''
-  const q = buscar.value.toLowerCase()
-  const f = filtro.value
-
-  stock
-    .filter(p =>
-      (!f || p.categoria === f) &&
-      p.nombre.toLowerCase().includes(q)
-    )
-    .forEach(p => {
-      lista.innerHTML += `
-      <div class="card ${p.cantidad<=3?'critico':''}">
-        <b>${p.nombre}</b>
-        <small>(${p.categoria})</small><br>
-
-        Stock:
-        <span class="${p.cantidad<=3?'low':''}">
-          ${p.cantidad<=3
-            ? '⚠ STOCK CRÍTICO: ' + p.cantidad
-            : p.cantidad}
-        </span><br>
-
-        <button onclick="mod('${p.id}',1)">+</button>
-        <button onclick="mod('${p.id}',-1)">-</button>
-        <button onclick="borrar('${p.id}')">🗑</button>
-      </div>`
-    })
+  kTotal.innerText=stock.length
+  kCritico.innerText=criticos
+  kCategoria.innerText=f||'Todas'
 }
 
 function agregar(){
-  if(!nombre.value || !categoria.value) return
-
+  if(!nombre.value||!categoria.value)return
   stock.push({
-    id: Date.now().toString(),
-    nombre: nombre.value,
-    categoria: categoria.value,
-    cantidad: +cantidad.value
+    id:Date.now().toString(),
+    nombre:nombre.value,
+    categoria:categoria.value,
+    cantidad:+cantidad.value
   })
-
-  guardar()
-  cargarCategorias()
-  cargar()
-
-  nombre.value = ''
-  categoria.value = ''
-  cantidad.value = ''
+  save()
+  nombre.value=categoria.value=cantidad.value=''
+  render()
 }
 
-function mod(id, val){
-  const p = stock.find(x => x.id === id)
+function mod(id,v){
+  const p=stock.find(x=>x.id===id)
   if(p){
-    p.cantidad = Math.max(0, p.cantidad + val)
-    guardar()
-    cargar()
+    p.cantidad=Math.max(0,p.cantidad+v)
+    save();render()
   }
 }
 
-function borrar(id){
-  stock = stock.filter(p => p.id !== id)
-  guardar()
-  cargarCategorias()
-  cargar()
+function del(id){
+  if(confirm('¿Eliminar producto?')){
+    stock=stock.filter(p=>p.id!==id)
+    save();render()
+  }
 }
 
-cargarCategorias()
-cargar()
+render()
 </script>
 
 </body>
