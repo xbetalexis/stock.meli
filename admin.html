@@ -16,21 +16,13 @@ body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text)}
 header{position:sticky;top:0;background:var(--panel);padding:12px;border-bottom:1px solid #1f2937}
 .header-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .kpi{background:var(--card);padding:10px;border-radius:10px;text-align:center}
-.kpi h3{margin:0;font-size:13px;color:var(--muted)}
+.kpi h3{margin:0;font-size:13px;color:var(--muted);display:flex;gap:6px;justify-content:center;align-items:center}
 .kpi span{font-size:16px;font-weight:bold}
-
-.alerta{
-  color:white;
-  background:var(--danger);
-  padding:4px 8px;
-  border-radius:6px;
-  animation:blink 1s infinite;
-}
-
+.alerta{color:#fff;background:var(--danger);padding:4px 8px;border-radius:6px;animation:blink 1s infinite}
 .container{max-width:1200px;margin:auto;padding:15px}
 input,button{padding:10px;border-radius:8px;border:none}
 input{background:#020617;color:var(--text);border:1px solid #1f2937}
-button{background:var(--accent);font-weight:600;cursor:pointer}
+button{background:var(--accent);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
 .card{background:var(--card);padding:12px;border-radius:12px;display:flex;flex-direction:column;gap:8px}
 .card.critico{border:2px solid var(--danger);box-shadow:0 0 12px var(--danger)}
@@ -41,15 +33,9 @@ button{background:var(--accent);font-weight:600;cursor:pointer}
 table{width:100%;border-collapse:collapse;margin-top:10px}
 th,td{padding:8px;border-bottom:1px solid #1f2937;font-size:14px}
 th{color:var(--muted);text-align:left}
-
-@keyframes blink{
-  0%,50%,100%{opacity:1}
-  25%,75%{opacity:.3}
-}
-
-@media(max-width:800px){
-  .header-grid{grid-template-columns:1fr 1fr}
-}
+@keyframes blink{0%,50%,100%{opacity:1}25%,75%{opacity:.3}}
+@media(max-width:800px){.header-grid{grid-template-columns:1fr 1fr}}
+svg{width:16px;height:16px}
 </style>
 </head>
 
@@ -57,42 +43,54 @@ th{color:var(--muted);text-align:left}
 
 <header>
   <div class="header-grid">
-    <div class="kpi"><h3>📦 Productos</h3><span id="kProd">0</span></div>
-    <div class="kpi"><h3>🚨 Stock crítico</h3><span id="kCritico">Sin alertas</span></div>
-    <div class="kpi"><h3>💰 Vendido hoy</h3><span id="kHoy">0</span></div>
-    <div class="kpi"><h3>📈 Ganancia hoy</h3><span id="kGan">$0</span></div>
+    <div class="kpi">
+      <h3><i data-lucide="package"></i> Productos</h3>
+      <span id="kProd">0</span>
+    </div>
+    <div class="kpi">
+      <h3><i data-lucide="alert-triangle"></i> Stock crítico</h3>
+      <span id="kCritico">Sin alertas</span>
+    </div>
+    <div class="kpi">
+      <h3><i data-lucide="shopping-cart"></i> Vendido hoy</h3>
+      <span id="kHoy">0</span>
+    </div>
+    <div class="kpi">
+      <h3><i data-lucide="dollar-sign"></i> Ganancia hoy</h3>
+      <span id="kGan">$0</span>
+    </div>
   </div>
 </header>
 
 <div class="container">
 
-<h2>📦 Stock</h2>
+<h2><i data-lucide="boxes"></i> Stock</h2>
 
-<input id="buscarProducto" placeholder="🔍 Buscar producto..." oninput="render()"><br><br>
+<input id="buscarProducto" placeholder="Buscar producto..." oninput="render()"><br><br>
 
 <input id="nombre" placeholder="Producto">
 <input id="categoria" placeholder="Categoría">
 <input id="cantidad" type="number" placeholder="Stock inicial">
 <input id="precio" type="number" placeholder="Precio unitario">
-<button onclick="agregar()">➕ Agregar</button>
+<button onclick="agregar()"><i data-lucide="plus-circle"></i> Agregar</button>
 
 <div class="grid" id="lista"></div>
 
 <hr>
 
-<h2>🧾 Historial de ventas</h2>
+<h2><i data-lucide="clipboard-list"></i> Historial de ventas</h2>
 
 <input type="date" id="fechaFiltro" onchange="renderVentas()">
-<input id="buscarVenta" placeholder="🔍 Buscar venta..." oninput="renderVentas()">
+<input id="buscarVenta" placeholder="Buscar venta..." oninput="renderVentas()">
 
 <table>
 <thead>
 <tr>
-<th>📅 Fecha</th>
-<th>📦 Producto</th>
-<th>🔢 Cant.</th>
-<th>💵 Precio</th>
-<th>📈 Ganancia</th>
+<th>Fecha</th>
+<th>Producto</th>
+<th>Cant.</th>
+<th>Precio</th>
+<th>Ganancia</th>
 </tr>
 </thead>
 <tbody id="ventasTabla"></tbody>
@@ -100,41 +98,35 @@ th{color:var(--muted);text-align:left}
 
 </div>
 
+<script src="https://unpkg.com/lucide@latest"></script>
+
 <script>
 if(localStorage.getItem('auth')!=='ok') location.href='index.html'
 
-let stock = JSON.parse(localStorage.getItem('stock')||'[]')
-let ventas = JSON.parse(localStorage.getItem('ventas')||'[]')
-let criticos = []
-let critIndex = 0
-let critTimer = null
+let stock=JSON.parse(localStorage.getItem('stock')||'[]')
+let ventas=JSON.parse(localStorage.getItem('ventas')||'[]')
+let criticos=[], critIndex=0, critTimer=null
 
 function save(){
   localStorage.setItem('stock',JSON.stringify(stock))
   localStorage.setItem('ventas',JSON.stringify(ventas))
 }
-
-function hoy(){
-  return new Date().toISOString().split('T')[0]
-}
+function hoy(){return new Date().toISOString().split('T')[0]}
 
 function iniciarRotacionCriticos(){
   clearInterval(critTimer)
   kCritico.classList.remove('alerta')
-
-  if(criticos.length === 0){
-    kCritico.innerText = 'Sin alertas'
+  if(criticos.length===0){
+    kCritico.innerText='Sin alertas'
     return
   }
-
   kCritico.classList.add('alerta')
-  critIndex = 0
-  kCritico.innerText = criticos[0]
-
-  if(criticos.length > 1){
-    critTimer = setInterval(()=>{
-      critIndex = (critIndex + 1) % criticos.length
-      kCritico.innerText = criticos[critIndex]
+  critIndex=0
+  kCritico.innerText=criticos[0]
+  if(criticos.length>1){
+    critTimer=setInterval(()=>{
+      critIndex=(critIndex+1)%criticos.length
+      kCritico.innerText=criticos[critIndex]
     },2000)
   }
 }
@@ -142,27 +134,26 @@ function iniciarRotacionCriticos(){
 function render(){
   lista.innerHTML=''
   criticos=[]
-  const q = buscarProducto.value.toLowerCase()
+  const q=buscarProducto.value.toLowerCase()
 
   stock.filter(p=>p.nombre.toLowerCase().includes(q)).forEach(p=>{
     if(p.cantidad<=3) criticos.push(p.nombre)
-
     lista.innerHTML+=`
     <div class="card ${p.cantidad<=3?'critico':''}">
       <b>${p.nombre}</b>
       <small>${p.categoria}</small>
-      <div>💵 Precio: $${p.precio}</div>
+      <div>Precio: $${p.precio}</div>
       <div class="stock ${p.cantidad<=3?'low':''}">${p.cantidad}</div>
       <div class="actions">
-        <button onclick="vender('${p.id}')">💰 Vender</button>
-        <button onclick="reponer('${p.id}')">📦 Reponer</button>
-        <button onclick="eliminar('${p.id}')">🗑 Eliminar</button>
+        <button onclick="vender('${p.id}')"><i data-lucide="banknote"></i> Vender</button>
+        <button onclick="reponer('${p.id}')"><i data-lucide="package-plus"></i> Reponer</button>
+        <button onclick="eliminar('${p.id}')"><i data-lucide="trash-2"></i></button>
       </div>
     </div>`
   })
-
-  kProd.innerText = stock.length
+  kProd.innerText=stock.length
   iniciarRotacionCriticos()
+  lucide.createIcons()
 }
 
 function agregar(){
@@ -180,52 +171,38 @@ function agregar(){
 }
 
 function vender(id){
-  const p = stock.find(x=>x.id===id)
+  const p=stock.find(x=>x.id===id)
   if(!p) return
-  const cant = parseInt(prompt(`¿Cuántas unidades?\nStock: ${p.cantidad}`))
+  const cant=parseInt(prompt(`¿Cuántas unidades?\nStock: ${p.cantidad}`))
   if(isNaN(cant)||cant<=0||cant>p.cantidad) return
-  p.cantidad -= cant
-  ventas.push({
-    fecha:new Date().toISOString(),
-    producto:p.nombre,
-    cantidad:cant,
-    precio:p.precio,
-    ganancia:cant*p.precio
-  })
-  save()
-  render()
-  renderVentas()
+  p.cantidad-=cant
+  ventas.push({fecha:new Date().toISOString(),producto:p.nombre,cantidad:cant,precio:p.precio,ganancia:cant*p.precio})
+  save();render();renderVentas()
 }
 
 function reponer(id){
-  const p = stock.find(x=>x.id===id)
+  const p=stock.find(x=>x.id===id)
   if(!p) return
-  const cant = parseInt(prompt('¿Cuántas unidades ingresan?'))
+  const cant=parseInt(prompt('¿Cuántas unidades ingresan?'))
   if(isNaN(cant)||cant<=0) return
-  p.cantidad += cant
-  save()
-  render()
+  p.cantidad+=cant
+  save();render()
 }
 
 function eliminar(id){
   if(confirm('¿Eliminar producto?')){
-    stock = stock.filter(p=>p.id!==id)
-    save()
-    render()
+    stock=stock.filter(p=>p.id!==id)
+    save();render()
   }
 }
 
 function renderVentas(){
   ventasTabla.innerHTML=''
   let totalHoy=0, ganHoy=0
-
   ventas.forEach(v=>{
     const f=v.fecha.split('T')[0]
     const g=Number(v.ganancia)||0
-    if(f===hoy()){
-      totalHoy+=Number(v.cantidad)||0
-      ganHoy+=g
-    }
+    if(f===hoy()){ totalHoy+=Number(v.cantidad)||0; ganHoy+=g }
     ventasTabla.innerHTML+=`
     <tr>
       <td>${f}</td>
@@ -235,19 +212,13 @@ function renderVentas(){
       <td>$${g}</td>
     </tr>`
   })
-
-  kHoy.innerText = totalHoy
-  kGan.innerText = '$'+ganHoy
+  kHoy.innerText=totalHoy
+  kGan.innerText='$'+ganHoy
 }
 
 render()
 renderVentas()
-</script>
-
-<!-- 🔥 TWEMOJI (emojis 3D / pro) -->
-<script src="https://twemoji.maxcdn.com/v/latest/twemoji.min.js" crossorigin="anonymous"></script>
-<script>
-  twemoji.parse(document.body, {folder: 'svg', ext: '.svg'})
+lucide.createIcons()
 </script>
 
 </body>
