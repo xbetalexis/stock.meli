@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Stock</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:sans-serif;background:#020617;color:white;padding:10px}
+input,button{padding:8px;margin:5px}
+.card{background:#0f172a;padding:10px;border-radius:8px;margin-top:10px}
+.low{color:red}
+</style>
+</head>
+<body>
+
+<h2>📦 Stock</h2>
+
+<input id="nombre" placeholder="Producto">
+<input id="cantidad" type="number" placeholder="Cantidad">
+<button onclick="agregar()">Agregar</button>
+
+<div id="lista"></div>
+
+<script>
+if(localStorage.getItem('auth')!=='ok')location.href='index.html'
+
+async function cargar(){
+  const r = await fetch('/api/productos')
+  const d = await r.json()
+  lista.innerHTML=''
+  d.forEach(p=>{
+    lista.innerHTML+=`
+    <div class="card">
+      <b>${p.nombre}</b><br>
+      Stock: <span class="${p.cantidad<=3?'low':''}">${p.cantidad}</span><br>
+      <button onclick="mod('${p.id}',1)">+</button>
+      <button onclick="mod('${p.id}',-1)">-</button>
+    </div>`
+  })
+}
+async function agregar(){
+  await fetch('/api/productos',{method:'POST',
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({nombre:nombre.value,cantidad:+cantidad.value})})
+  cargar()
+}
+async function mod(id,val){
+  await fetch('/api/productos',{method:'PUT',
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({id,val})})
+  cargar()
+}
+cargar()
+</script>
+</body>
+</html>
