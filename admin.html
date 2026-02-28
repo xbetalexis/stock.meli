@@ -6,18 +6,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body{font-family:sans-serif;background:#020617;color:white;padding:10px}
-input,button{padding:8px;margin:5px}
+input,select,button{padding:8px;margin:5px}
 .card{background:#0f172a;padding:10px;border-radius:8px;margin-top:10px}
 .low{color:red}
+.top{display:flex;flex-wrap:wrap;gap:5px}
 </style>
 </head>
 <body>
 
 <h2>📦 Stock</h2>
 
-<input id="nombre" placeholder="Producto">
-<input id="cantidad" type="number" placeholder="Cantidad">
-<button onclick="agregar()">Agregar</button>
+<div class="top">
+  <input id="buscar" placeholder="🔍 Buscar..." oninput="cargar()">
+  <select id="filtro" onchange="cargar()">
+    <option value="">Todas</option>
+  </select>
+</div>
+
+<div class="top">
+  <input id="nombre" placeholder="Producto">
+  <input id="categoria" placeholder="Categoría (celulares, fundas…)">
+  <input id="cantidad" type="number" placeholder="Cantidad">
+  <button onclick="agregar()">Agregar</button>
+</div>
 
 <div id="lista"></div>
 
@@ -30,41 +41,65 @@ function guardar(){
   localStorage.setItem('stock',JSON.stringify(stock))
 }
 
+function cargarCategorias(){
+  const cats=[...new Set(stock.map(p=>p.categoria))]
+  filtro.innerHTML='<option value="">Todas</option>'
+  cats.forEach(c=>{
+    filtro.innerHTML+=`<option>${c}</option>`
+  })
+}
+
 function cargar(){
   lista.innerHTML=''
-  stock.forEach(p=>{
+  const q=buscar.value.toLowerCase()
+  const f=filtro.value
+  stock
+  .filter(p=>
+    (!f||p.categoria===f) &&
+    p.nombre.toLowerCase().includes(q)
+  )
+  .forEach(p=>{
     lista.innerHTML+=`
     <div class="card">
-      <b>${p.nombre}</b><br>
+      <b>${p.nombre}</b> <small>(${p.categoria})</small><br>
       Stock: <span class="${p.cantidad<=3?'low':''}">${p.cantidad}</span><br>
       <button onclick="mod('${p.id}',1)">+</button>
       <button onclick="mod('${p.id}',-1)">-</button>
+      <button onclick="borrar('${p.id}')">🗑</button>
     </div>`
   })
 }
 
 function agregar(){
+  if(!nombre.value||!categoria.value)return
   stock.push({
     id:Date.now().toString(),
     nombre:nombre.value,
+    categoria:categoria.value,
     cantidad:+cantidad.value
   })
   guardar()
+  cargarCategorias()
   cargar()
   nombre.value=''
+  categoria.value=''
   cantidad.value=''
 }
 
 function mod(id,val){
   const p=stock.find(x=>x.id===id)
   if(p){
-    p.cantidad+=val
-    if(p.cantidad<0)p.cantidad=0
-    guardar()
-    cargar()
+    p.cantidad=Math.max(0,p.cantidad+val)
+    guardar();cargar()
   }
 }
 
+function borrar(id){
+  stock=stock.filter(p=>p.id!==id)
+  guardar();cargarCategorias();cargar()
+}
+
+cargarCategorias()
 cargar()
 </script>
 </body>
