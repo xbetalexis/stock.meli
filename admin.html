@@ -20,7 +20,7 @@
 
 body{
   margin:0;
-  font-family:system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
   background:var(--bg);
   color:var(--text);
 }
@@ -200,7 +200,7 @@ button{
 <div class="form">
   <input id="nombre" placeholder="Producto">
   <input id="categoria" placeholder="Categoría">
-  <input id="cantidad" type="number" placeholder="Stock">
+  <input id="cantidad" type="number" placeholder="Stock inicial">
   <button onclick="agregar()">Agregar</button>
 </div>
 
@@ -209,16 +209,18 @@ button{
 </div>
 
 <script>
-if(localStorage.getItem('auth')!=='ok')location.href='index.html'
+if(localStorage.getItem('auth')!=='ok') location.href='index.html'
 
-let stock=JSON.parse(localStorage.getItem('stock')||'[]')
+let stock = JSON.parse(localStorage.getItem('stock') || '[]')
 
-function save(){localStorage.setItem('stock',JSON.stringify(stock))}
+function save(){
+  localStorage.setItem('stock', JSON.stringify(stock))
+}
 
 function render(){
   lista.innerHTML=''
-  const q=buscar.value.toLowerCase()
-  const f=filtro.value
+  const q = buscar.value.toLowerCase()
+  const f = filtro.value
 
   const cats=[...new Set(stock.map(p=>p.categoria))]
   filtro.innerHTML='<option value="">Todas</option>'
@@ -226,56 +228,83 @@ function render(){
 
   let criticos=0
 
-  stock.filter(p=>
-    (!f||p.categoria===f) &&
-    p.nombre.toLowerCase().includes(q)
-  ).forEach(p=>{
-    if(p.cantidad<=3)criticos++
-    lista.innerHTML+=`
-    <div class="card ${p.cantidad<=3?'critico':''}">
-      <strong>${p.nombre}</strong>
-      <span class="badge">${p.categoria}</span>
-      <div class="stock ${p.cantidad<=3?'low':''}">
-        ${p.cantidad<=3?'⚠ '+p.cantidad:p.cantidad}
-      </div>
-      <div class="actions">
-        <button onclick="mod('${p.id}',1)">➕</button>
-        <button onclick="mod('${p.id}',-1)">➖</button>
-        <button onclick="del('${p.id}')">🗑</button>
-      </div>
-    </div>`
-  })
+  stock
+    .filter(p =>
+      (!f || p.categoria===f) &&
+      p.nombre.toLowerCase().includes(q)
+    )
+    .forEach(p=>{
+      if(p.cantidad<=3) criticos++
+      lista.innerHTML+=`
+      <div class="card ${p.cantidad<=3?'critico':''}">
+        <strong>${p.nombre}</strong>
+        <span class="badge">${p.categoria}</span>
 
-  kTotal.innerText=stock.length
-  kCritico.innerText=criticos
-  kCategoria.innerText=f||'Todas'
+        <div class="stock ${p.cantidad<=3?'low':''}">
+          ${p.cantidad<=3 ? '⚠ '+p.cantidad : p.cantidad}
+        </div>
+
+        <div class="actions">
+          <button onclick="vender('${p.id}')">💰 Vender</button>
+          <button onclick="mod('${p.id}',1)">➕</button>
+          <button onclick="eliminar('${p.id}')">🗑</button>
+        </div>
+      </div>`
+    })
+
+  kTotal.innerText = stock.length
+  kCritico.innerText = criticos
+  kCategoria.innerText = f || 'Todas'
 }
 
 function agregar(){
-  if(!nombre.value||!categoria.value)return
+  if(!nombre.value || !categoria.value) return
+
   stock.push({
-    id:Date.now().toString(),
-    nombre:nombre.value,
-    categoria:categoria.value,
-    cantidad:+cantidad.value
+    id: Date.now().toString(),
+    nombre: nombre.value,
+    categoria: categoria.value,
+    cantidad: +cantidad.value
   })
+
   save()
-  nombre.value=categoria.value=cantidad.value=''
+  nombre.value = categoria.value = cantidad.value = ''
   render()
 }
 
 function mod(id,v){
-  const p=stock.find(x=>x.id===id)
+  const p = stock.find(x=>x.id===id)
   if(p){
-    p.cantidad=Math.max(0,p.cantidad+v)
-    save();render()
+    p.cantidad += v
+    save()
+    render()
   }
 }
 
-function del(id){
-  if(confirm('¿Eliminar producto?')){
-    stock=stock.filter(p=>p.id!==id)
-    save();render()
+function vender(id){
+  const p = stock.find(x=>x.id===id)
+  if(!p) return
+
+  const cant = parseInt(prompt(
+    `¿Cuántas unidades vendiste?\nStock actual: ${p.cantidad}`
+  ))
+
+  if(isNaN(cant) || cant<=0) return
+  if(cant > p.cantidad){
+    alert('No hay stock suficiente')
+    return
+  }
+
+  p.cantidad -= cant
+  save()
+  render()
+}
+
+function eliminar(id){
+  if(confirm('¿Eliminar producto definitivamente?')){
+    stock = stock.filter(p=>p.id!==id)
+    save()
+    render()
   }
 }
 
