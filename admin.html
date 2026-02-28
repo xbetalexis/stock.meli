@@ -15,16 +15,13 @@
   --text:#e5e7eb;
   --muted:#94a3b8;
 }
-
 *{box-sizing:border-box}
-
 body{
   margin:0;
   font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
   background:var(--bg);
   color:var(--text);
 }
-
 header{
   position:sticky;
   top:0;
@@ -32,61 +29,51 @@ header{
   padding:12px;
   border-bottom:1px solid #1f2937;
 }
-
 .header-grid{
   display:grid;
   grid-template-columns:1fr 1fr 1fr;
   gap:10px;
 }
-
 .kpi{
   background:var(--card);
   padding:10px;
   border-radius:10px;
   text-align:center;
 }
-
 .kpi h3{
   margin:0;
   font-size:13px;
   color:var(--muted);
 }
-
 .kpi span{
   font-size:22px;
   font-weight:bold;
 }
-
 .container{
   max-width:1200px;
   margin:auto;
   padding:15px;
 }
-
 input,button{
   padding:10px;
   border-radius:8px;
   border:none;
 }
-
 input{
   background:#020617;
   color:var(--text);
   border:1px solid #1f2937;
 }
-
 button{
   background:var(--accent);
   font-weight:600;
   cursor:pointer;
 }
-
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
   gap:12px;
 }
-
 .card{
   background:var(--card);
   padding:12px;
@@ -95,37 +82,42 @@ button{
   flex-direction:column;
   gap:8px;
 }
-
 .card.critico{
   border:2px solid var(--danger);
   box-shadow:0 0 12px var(--danger);
 }
-
 .stock{
   font-size:20px;
   font-weight:bold;
 }
-
 .stock.low{
   background:var(--danger);
   padding:4px 8px;
   border-radius:6px;
   animation:blink 1s infinite;
 }
-
 .actions{
   display:flex;
   gap:6px;
   margin-top:auto;
 }
-
 .actions button{
   flex:1;
   background:#020617;
   border:1px solid #1f2937;
   color:var(--text);
 }
-
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+th,td{
+  padding:8px;
+  border-bottom:1px solid #1f2937;
+  font-size:14px;
+}
+th{color:var(--muted);text-align:left}
 @keyframes blink{
   0%,50%,100%{opacity:1}
   25%,75%{opacity:.3}
@@ -156,6 +148,10 @@ button{
 
 <h2>📦 Stock</h2>
 
+<input id="buscarProducto" placeholder="🔍 Buscar producto..." oninput="render()">
+
+<br><br>
+
 <input id="nombre" placeholder="Producto">
 <input id="categoria" placeholder="Categoría">
 <input id="cantidad" type="number" placeholder="Stock inicial">
@@ -168,9 +164,9 @@ button{
 <h2>🧾 Historial de ventas</h2>
 
 <input type="date" id="fechaFiltro" onchange="renderVentas()">
-<input id="buscarVenta" placeholder="Buscar producto..." oninput="renderVentas()">
+<input id="buscarVenta" placeholder="🔍 Buscar en ventas..." oninput="renderVentas()">
 
-<table width="100%">
+<table>
 <thead>
 <tr>
 <th>Fecha</th>
@@ -201,26 +197,24 @@ function hoy(){
 function render(){
   lista.innerHTML=''
   let crit=0
+  const q = buscarProducto.value.toLowerCase()
 
-  stock.forEach(p=>{
-    if(p.cantidad<=3) crit++
-
-    lista.innerHTML+=`
-    <div class="card ${p.cantidad<=3?'critico':''}">
-      <b>${p.nombre}</b>
-      <small>${p.categoria}</small>
-
-      <div class="stock ${p.cantidad<=3?'low':''}">
-        ${p.cantidad}
-      </div>
-
-      <div class="actions">
-        <button onclick="vender('${p.id}')">💰 Vender</button>
-        <button onclick="reponer('${p.id}')">📦 Reponer</button>
-        <button onclick="eliminar('${p.id}')">🗑</button>
-      </div>
-    </div>`
-  })
+  stock
+    .filter(p=>p.nombre.toLowerCase().includes(q))
+    .forEach(p=>{
+      if(p.cantidad<=3) crit++
+      lista.innerHTML+=`
+      <div class="card ${p.cantidad<=3?'critico':''}">
+        <b>${p.nombre}</b>
+        <small>${p.categoria}</small>
+        <div class="stock ${p.cantidad<=3?'low':''}">${p.cantidad}</div>
+        <div class="actions">
+          <button onclick="vender('${p.id}')">💰 Vender</button>
+          <button onclick="reponer('${p.id}')">📦 Reponer</button>
+          <button onclick="eliminar('${p.id}')">🗑</button>
+        </div>
+      </div>`
+    })
 
   kProd.innerText = stock.length
   kCrit.innerText = crit
@@ -242,18 +236,14 @@ function agregar(){
 function vender(id){
   const p = stock.find(x=>x.id===id)
   if(!p) return
-
   const cant = parseInt(prompt(`¿Cuántas unidades vendiste?\nStock: ${p.cantidad}`))
   if(isNaN(cant)||cant<=0||cant>p.cantidad) return
-
   p.cantidad -= cant
-
   ventas.push({
     fecha:new Date().toISOString(),
     producto:p.nombre,
     cantidad:cant
   })
-
   save()
   render()
   renderVentas()
@@ -262,10 +252,8 @@ function vender(id){
 function reponer(id){
   const p = stock.find(x=>x.id===id)
   if(!p) return
-
   const cant = parseInt(prompt('¿Cuántas unidades ingresan al stock?'))
   if(isNaN(cant)||cant<=0) return
-
   p.cantidad += cant
   save()
   render()
@@ -282,7 +270,6 @@ function eliminar(id){
 function renderVentas(){
   ventasTabla.innerHTML=''
   let totalHoy=0
-
   ventas
     .filter(v=>{
       const f=v.fecha.split('T')[0]
@@ -299,7 +286,6 @@ function renderVentas(){
         <td>${v.cantidad}</td>
       </tr>`
     })
-
   kHoy.innerText = totalHoy
 }
 
