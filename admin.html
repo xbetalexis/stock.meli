@@ -44,7 +44,7 @@ th{color:var(--muted);text-align:left}
     <div class="kpi"><h3>Productos</h3><span id="kProd">0</span></div>
     <div class="kpi"><h3>Stock crítico</h3><span id="kCrit">0</span></div>
     <div class="kpi"><h3>Vendido hoy</h3><span id="kHoy">0</span></div>
-    <div class="kpi"><h3>Ganancia hoy</h3><span id="kGan">0</span></div>
+    <div class="kpi"><h3>Ganancia hoy</h3><span id="kGan">$0</span></div>
   </div>
 </header>
 
@@ -94,7 +94,10 @@ function save(){
   localStorage.setItem('stock',JSON.stringify(stock))
   localStorage.setItem('ventas',JSON.stringify(ventas))
 }
-function hoy(){return new Date().toISOString().split('T')[0]}
+
+function hoy(){
+  return new Date().toISOString().split('T')[0]
+}
 
 function render(){
   lista.innerHTML=''
@@ -138,18 +141,23 @@ function agregar(){
 function vender(id){
   const p=stock.find(x=>x.id===id)
   if(!p) return
+
   const cant=parseInt(prompt(`¿Cuántas unidades?\nStock: ${p.cantidad}`))
   if(isNaN(cant)||cant<=0||cant>p.cantidad) return
+
   p.cantidad-=cant
-  const gan=cant*p.precio
+
   ventas.push({
     fecha:new Date().toISOString(),
     producto:p.nombre,
     cantidad:cant,
     precio:p.precio,
-    ganancia:gan
+    ganancia: cant * p.precio
   })
-  save();render();renderVentas()
+
+  save()
+  render()
+  renderVentas()
 }
 
 function reponer(id){
@@ -158,37 +166,48 @@ function reponer(id){
   const cant=parseInt(prompt('¿Cuántas unidades ingresan?'))
   if(isNaN(cant)||cant<=0) return
   p.cantidad+=cant
-  save();render()
+  save()
+  render()
 }
 
 function eliminar(id){
   if(confirm('¿Eliminar producto?')){
     stock=stock.filter(p=>p.id!==id)
-    save();render()
+    save()
+    render()
   }
 }
 
 function renderVentas(){
   ventasTabla.innerHTML=''
-  let totalHoy=0, ganHoy=0
+  let totalHoy=0
+  let ganHoy=0
+
   ventas.filter(v=>{
     const f=v.fecha.split('T')[0]
     return (!fechaFiltro.value||f===fechaFiltro.value) &&
            v.producto.toLowerCase().includes(buscarVenta.value.toLowerCase())
   }).forEach(v=>{
     const f=v.fecha.split('T')[0]
-    if(f===hoy()){ totalHoy+=v.cantidad; ganHoy+=v.ganancia }
+    const g = Number(v.ganancia) || 0   // 🔐 blindaje
+
+    if(f===hoy()){
+      totalHoy += Number(v.cantidad) || 0
+      ganHoy += g
+    }
+
     ventasTabla.innerHTML+=`
     <tr>
       <td>${f}</td>
       <td>${v.producto}</td>
       <td>${v.cantidad}</td>
-      <td>$${v.precio}</td>
-      <td>$${v.ganancia}</td>
+      <td>$${v.precio || 0}</td>
+      <td>$${g}</td>
     </tr>`
   })
-  kHoy.innerText=totalHoy
-  kGan.innerText='$'+ganHoy
+
+  kHoy.innerText = totalHoy
+  kGan.innerText = '$' + ganHoy
 }
 
 render()
