@@ -24,11 +24,15 @@ input,button{padding:8px;margin:5px}
 <script>
 if(localStorage.getItem('auth')!=='ok')location.href='index.html'
 
-async function cargar(){
-  const r = await fetch('/api/productos')
-  const d = await r.json()
+let stock = JSON.parse(localStorage.getItem('stock')||'[]')
+
+function guardar(){
+  localStorage.setItem('stock',JSON.stringify(stock))
+}
+
+function cargar(){
   lista.innerHTML=''
-  d.forEach(p=>{
+  stock.forEach(p=>{
     lista.innerHTML+=`
     <div class="card">
       <b>${p.nombre}</b><br>
@@ -38,18 +42,29 @@ async function cargar(){
     </div>`
   })
 }
-async function agregar(){
-  await fetch('/api/productos',{method:'POST',
-  headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({nombre:nombre.value,cantidad:+cantidad.value})})
+
+function agregar(){
+  stock.push({
+    id:Date.now().toString(),
+    nombre:nombre.value,
+    cantidad:+cantidad.value
+  })
+  guardar()
   cargar()
+  nombre.value=''
+  cantidad.value=''
 }
-async function mod(id,val){
-  await fetch('/api/productos',{method:'PUT',
-  headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({id,val})})
-  cargar()
+
+function mod(id,val){
+  const p=stock.find(x=>x.id===id)
+  if(p){
+    p.cantidad+=val
+    if(p.cantidad<0)p.cantidad=0
+    guardar()
+    cargar()
+  }
 }
+
 cargar()
 </script>
 </body>
