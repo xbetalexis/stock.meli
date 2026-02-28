@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Panel de Stock</title>
+<title>Panel Stock & Ventas</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -31,7 +31,6 @@ header{
   background:var(--panel);
   padding:12px;
   border-bottom:1px solid #1f2937;
-  z-index:10;
 }
 
 .header-grid{
@@ -59,23 +58,15 @@ header{
 }
 
 .container{
-  max-width:1100px;
+  max-width:1200px;
   margin:auto;
   padding:15px;
-}
-
-.controls{
-  display:grid;
-  grid-template-columns:1fr 200px;
-  gap:10px;
-  margin-bottom:15px;
 }
 
 input,select,button{
   padding:10px;
   border-radius:8px;
   border:none;
-  font-size:14px;
 }
 
 input,select{
@@ -90,13 +81,6 @@ button{
   cursor:pointer;
 }
 
-.form{
-  display:grid;
-  grid-template-columns:2fr 1fr 1fr auto;
-  gap:10px;
-  margin-bottom:20px;
-}
-
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
@@ -107,53 +91,13 @@ button{
   background:var(--card);
   padding:12px;
   border-radius:12px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-
-.card.critico{
-  border:2px solid var(--danger);
-  box-shadow:0 0 12px var(--danger);
-}
-
-.badge{
-  display:inline-block;
-  background:#1f2937;
-  color:var(--muted);
-  font-size:12px;
-  padding:3px 8px;
-  border-radius:999px;
-}
-
-.stock{
-  font-size:20px;
-  font-weight:bold;
 }
 
 .stock.low{
-  color:white;
   background:var(--danger);
   padding:4px 8px;
   border-radius:6px;
   animation:blink 1s infinite;
-}
-
-.actions{
-  display:flex;
-  gap:8px;
-  margin-top:auto;
-}
-
-.actions button{
-  flex:1;
-  background:#020617;
-  border:1px solid #1f2937;
-  color:var(--text);
-}
-
-.actions button:hover{
-  background:#111827;
 }
 
 @keyframes blink{
@@ -161,10 +105,25 @@ button{
   25%,75%{opacity:.3}
 }
 
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+
+th,td{
+  padding:8px;
+  border-bottom:1px solid #1f2937;
+  font-size:14px;
+}
+
+th{
+  color:var(--muted);
+  text-align:left;
+}
+
 @media(max-width:700px){
   .header-grid{grid-template-columns:1fr}
-  .controls{grid-template-columns:1fr}
-  .form{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -175,140 +134,145 @@ button{
   <div class="header-grid">
     <div class="kpi">
       <h3>Total productos</h3>
-      <span id="kTotal">0</span>
+      <span id="kProd">0</span>
     </div>
     <div class="kpi">
       <h3>Stock crítico</h3>
-      <span id="kCritico">0</span>
+      <span id="kCrit">0</span>
     </div>
     <div class="kpi">
-      <h3>Categoría</h3>
-      <span id="kCategoria">Todas</span>
+      <h3>Total vendido hoy</h3>
+      <span id="kHoy">0</span>
     </div>
   </div>
 </header>
 
 <div class="container">
 
-<div class="controls">
-  <input id="buscar" placeholder="Buscar producto..." oninput="render()">
-  <select id="filtro" onchange="render()">
-    <option value="">Todas</option>
-  </select>
-</div>
+<h2>📦 Stock</h2>
 
-<div class="form">
-  <input id="nombre" placeholder="Producto">
-  <input id="categoria" placeholder="Categoría">
-  <input id="cantidad" type="number" placeholder="Stock inicial">
-  <button onclick="agregar()">Agregar</button>
-</div>
+<input id="nombre" placeholder="Producto">
+<input id="categoria" placeholder="Categoría">
+<input id="cantidad" type="number" placeholder="Stock inicial">
+<button onclick="agregar()">Agregar</button>
 
 <div class="grid" id="lista"></div>
+
+<hr>
+
+<h2>🧾 Historial de ventas</h2>
+
+<input type="date" id="fechaFiltro" onchange="renderVentas()">
+<input id="buscarVenta" placeholder="Buscar producto..." oninput="renderVentas()">
+
+<table>
+<thead>
+<tr>
+<th>Fecha</th>
+<th>Producto</th>
+<th>Cantidad</th>
+</tr>
+</thead>
+<tbody id="ventasTabla"></tbody>
+</table>
 
 </div>
 
 <script>
 if(localStorage.getItem('auth')!=='ok') location.href='index.html'
 
-let stock = JSON.parse(localStorage.getItem('stock') || '[]')
+let stock = JSON.parse(localStorage.getItem('stock')||'[]')
+let ventas = JSON.parse(localStorage.getItem('ventas')||'[]')
 
 function save(){
-  localStorage.setItem('stock', JSON.stringify(stock))
+  localStorage.setItem('stock',JSON.stringify(stock))
+  localStorage.setItem('ventas',JSON.stringify(ventas))
+}
+
+function hoy(){
+  return new Date().toISOString().split('T')[0]
 }
 
 function render(){
   lista.innerHTML=''
-  const q = buscar.value.toLowerCase()
-  const f = filtro.value
+  let crit=0
 
-  const cats=[...new Set(stock.map(p=>p.categoria))]
-  filtro.innerHTML='<option value="">Todas</option>'
-  cats.forEach(c=>filtro.innerHTML+=`<option>${c}</option>`)
+  stock.forEach(p=>{
+    if(p.cantidad<=3) crit++
+    lista.innerHTML+=`
+    <div class="card">
+      <b>${p.nombre}</b><br>
+      <small>${p.categoria}</small><br>
+      <div class="stock ${p.cantidad<=3?'low':''}">
+        ${p.cantidad}
+      </div>
+      <button onclick="vender('${p.id}')">💰 Vender</button>
+    </div>`
+  })
 
-  let criticos=0
-
-  stock
-    .filter(p =>
-      (!f || p.categoria===f) &&
-      p.nombre.toLowerCase().includes(q)
-    )
-    .forEach(p=>{
-      if(p.cantidad<=3) criticos++
-      lista.innerHTML+=`
-      <div class="card ${p.cantidad<=3?'critico':''}">
-        <strong>${p.nombre}</strong>
-        <span class="badge">${p.categoria}</span>
-
-        <div class="stock ${p.cantidad<=3?'low':''}">
-          ${p.cantidad<=3 ? '⚠ '+p.cantidad : p.cantidad}
-        </div>
-
-        <div class="actions">
-          <button onclick="vender('${p.id}')">💰 Vender</button>
-          <button onclick="mod('${p.id}',1)">➕</button>
-          <button onclick="eliminar('${p.id}')">🗑</button>
-        </div>
-      </div>`
-    })
-
-  kTotal.innerText = stock.length
-  kCritico.innerText = criticos
-  kCategoria.innerText = f || 'Todas'
+  kProd.innerText = stock.length
+  kCrit.innerText = crit
 }
 
 function agregar(){
-  if(!nombre.value || !categoria.value) return
-
+  if(!nombre.value) return
   stock.push({
-    id: Date.now().toString(),
-    nombre: nombre.value,
-    categoria: categoria.value,
-    cantidad: +cantidad.value
+    id:Date.now().toString(),
+    nombre:nombre.value,
+    categoria:categoria.value,
+    cantidad:+cantidad.value
   })
-
   save()
-  nombre.value = categoria.value = cantidad.value = ''
+  nombre.value=categoria.value=cantidad.value=''
   render()
-}
-
-function mod(id,v){
-  const p = stock.find(x=>x.id===id)
-  if(p){
-    p.cantidad += v
-    save()
-    render()
-  }
 }
 
 function vender(id){
   const p = stock.find(x=>x.id===id)
   if(!p) return
 
-  const cant = parseInt(prompt(
-    `¿Cuántas unidades vendiste?\nStock actual: ${p.cantidad}`
-  ))
-
-  if(isNaN(cant) || cant<=0) return
-  if(cant > p.cantidad){
-    alert('No hay stock suficiente')
-    return
-  }
+  const cant = parseInt(prompt(`¿Cuántas unidades?\nStock: ${p.cantidad}`))
+  if(isNaN(cant)||cant<=0||cant>p.cantidad) return
 
   p.cantidad -= cant
+
+  ventas.push({
+    fecha:new Date().toISOString(),
+    producto:p.nombre,
+    cantidad:cant
+  })
+
   save()
   render()
+  renderVentas()
 }
 
-function eliminar(id){
-  if(confirm('¿Eliminar producto definitivamente?')){
-    stock = stock.filter(p=>p.id!==id)
-    save()
-    render()
-  }
+function renderVentas(){
+  ventasTabla.innerHTML=''
+  let totalHoy=0
+
+  ventas
+    .filter(v=>{
+      const f = v.fecha.split('T')[0]
+      return (!fechaFiltro.value || f===fechaFiltro.value) &&
+             v.producto.toLowerCase().includes(buscarVenta.value.toLowerCase())
+    })
+    .forEach(v=>{
+      const f=v.fecha.split('T')[0]
+      if(f===hoy()) totalHoy+=v.cantidad
+      ventasTabla.innerHTML+=`
+      <tr>
+        <td>${f}</td>
+        <td>${v.producto}</td>
+        <td>${v.cantidad}</td>
+      </tr>`
+    })
+
+  kHoy.innerText = totalHoy
 }
 
 render()
+renderVentas()
 </script>
 
 </body>
