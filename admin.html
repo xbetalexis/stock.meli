@@ -17,7 +17,14 @@ header{position:sticky;top:0;background:var(--panel);padding:12px;border-bottom:
 .header-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .kpi{background:var(--card);padding:10px;border-radius:10px;text-align:center}
 .kpi h3{margin:0;font-size:13px;color:var(--muted)}
-.kpi span{font-size:20px;font-weight:bold}
+.kpi span{font-size:16px;font-weight:bold}
+.kpi .alerta{
+  color:white;
+  background:var(--danger);
+  padding:4px 8px;
+  border-radius:6px;
+  animation:blink 1s infinite;
+}
 .container{max-width:1200px;margin:auto;padding:15px}
 input,button{padding:10px;border-radius:8px;border:none}
 input{background:#020617;color:var(--text);border:1px solid #1f2937}
@@ -42,7 +49,7 @@ th{color:var(--muted);text-align:left}
 <header>
   <div class="header-grid">
     <div class="kpi"><h3>Productos</h3><span id="kProd">0</span></div>
-    <div class="kpi"><h3>Stock crítico</h3><span id="kCrit">0</span></div>
+    <div class="kpi"><h3>Stock crítico</h3><span id="kCritico" class="alerta">Sin alertas</span></div>
     <div class="kpi"><h3>Vendido hoy</h3><span id="kHoy">0</span></div>
     <div class="kpi"><h3>Ganancia hoy</h3><span id="kGan">$0</span></div>
   </div>
@@ -89,6 +96,9 @@ if(localStorage.getItem('auth')!=='ok') location.href='index.html'
 
 let stock = JSON.parse(localStorage.getItem('stock')||'[]')
 let ventas = JSON.parse(localStorage.getItem('ventas')||'[]')
+let criticos = []
+let critIndex = 0
+let critTimer = null
 
 function save(){
   localStorage.setItem('stock',JSON.stringify(stock))
@@ -99,13 +109,31 @@ function hoy(){
   return new Date().toISOString().split('T')[0]
 }
 
+function iniciarRotacionCriticos(){
+  clearInterval(critTimer)
+
+  if(criticos.length === 0){
+    kCritico.innerText = 'Sin alertas'
+    return
+  }
+
+  kCritico.innerText = criticos[0]
+  critIndex = 0
+
+  critTimer = setInterval(()=>{
+    critIndex = (critIndex + 1) % criticos.length
+    kCritico.innerText = criticos[critIndex]
+  },2000)
+}
+
 function render(){
   lista.innerHTML=''
-  let crit=0
-  const q=buscarProducto.value.toLowerCase()
+  criticos=[]
+  const q = buscarProducto.value.toLowerCase()
 
   stock.filter(p=>p.nombre.toLowerCase().includes(q)).forEach(p=>{
-    if(p.cantidad<=3) crit++
+    if(p.cantidad<=3) criticos.push(p.nombre)
+
     lista.innerHTML+=`
     <div class="card ${p.cantidad<=3?'critico':''}">
       <b>${p.nombre}</b>
@@ -120,8 +148,8 @@ function render(){
     </div>`
   })
 
-  kProd.innerText=stock.length
-  kCrit.innerText=crit
+  kProd.innerText = stock.length
+  iniciarRotacionCriticos()
 }
 
 function agregar(){
@@ -139,20 +167,20 @@ function agregar(){
 }
 
 function vender(id){
-  const p=stock.find(x=>x.id===id)
+  const p = stock.find(x=>x.id===id)
   if(!p) return
 
-  const cant=parseInt(prompt(`¿Cuántas unidades?\nStock: ${p.cantidad}`))
+  const cant = parseInt(prompt(`¿Cuántas unidades?\nStock: ${p.cantidad}`))
   if(isNaN(cant)||cant<=0||cant>p.cantidad) return
 
-  p.cantidad-=cant
+  p.cantidad -= cant
 
   ventas.push({
     fecha:new Date().toISOString(),
     producto:p.nombre,
     cantidad:cant,
     precio:p.precio,
-    ganancia: cant * p.precio
+    ganancia:cant*p.precio
   })
 
   save()
@@ -161,18 +189,18 @@ function vender(id){
 }
 
 function reponer(id){
-  const p=stock.find(x=>x.id===id)
+  const p = stock.find(x=>x.id===id)
   if(!p) return
-  const cant=parseInt(prompt('¿Cuántas unidades ingresan?'))
+  const cant = parseInt(prompt('¿Cuántas unidades ingresan?'))
   if(isNaN(cant)||cant<=0) return
-  p.cantidad+=cant
+  p.cantidad += cant
   save()
   render()
 }
 
 function eliminar(id){
   if(confirm('¿Eliminar producto?')){
-    stock=stock.filter(p=>p.id!==id)
+    stock = stock.filter(p=>p.id!==id)
     save()
     render()
   }
@@ -180,34 +208,27 @@ function eliminar(id){
 
 function renderVentas(){
   ventasTabla.innerHTML=''
-  let totalHoy=0
-  let ganHoy=0
+  let totalHoy=0, ganHoy=0
 
-  ventas.filter(v=>{
+  ventas.forEach(v=>{
     const f=v.fecha.split('T')[0]
-    return (!fechaFiltro.value||f===fechaFiltro.value) &&
-           v.producto.toLowerCase().includes(buscarVenta.value.toLowerCase())
-  }).forEach(v=>{
-    const f=v.fecha.split('T')[0]
-    const g = Number(v.ganancia) || 0   // 🔐 blindaje
-
+    const g=Number(v.ganancia)||0
     if(f===hoy()){
-      totalHoy += Number(v.cantidad) || 0
-      ganHoy += g
+      totalHoy+=Number(v.cantidad)||0
+      ganHoy+=g
     }
-
     ventasTabla.innerHTML+=`
     <tr>
       <td>${f}</td>
       <td>${v.producto}</td>
       <td>${v.cantidad}</td>
-      <td>$${v.precio || 0}</td>
+      <td>$${v.precio}</td>
       <td>$${g}</td>
     </tr>`
   })
 
   kHoy.innerText = totalHoy
-  kGan.innerText = '$' + ganHoy
+  kGan.innerText = '$'+ganHoy
 }
 
 render()
